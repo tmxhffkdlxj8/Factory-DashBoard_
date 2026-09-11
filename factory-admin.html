@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
+<!-- 카카오톡 "나에게 보내기" 알림 연동에 필요한 공식 SDK. KAKAO_JS_KEY를 설정하지 않으면
+     관련 버튼/기능은 자동으로 비활성 상태로 남는다.
+     ↓ 아래 태그는 https://developers.kakao.com/docs/latest/ko/javascript/getting-started 의
+     "카카오 SDK 설치" 코드를 그대로 복사해 최신 버전/무결성(integrity) 값으로 교체해서 쓰는 것을 권장한다. -->
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>
 <title>미리내 AX-PBL · 관리자 화면</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
@@ -561,6 +566,8 @@ table.data-table tr:hover td{background:rgba(255,255,255,.02);}
   font-family:var(--font-display);font-weight:700;font-size:13px;padding:9px 16px;border-radius:var(--radius-pill);
   white-space:nowrap;display:flex;align-items:center;gap:6px;}
 .help-btn:hover{color:var(--accent);border-color:var(--accent);}
+#kakaoBtn.connected{color:#3c1e1e;background:#FEE500;border-color:#FEE500;}
+#kakaoBtn.connected:hover{color:#3c1e1e;border-color:#e6cf00;}
 
 /* ============ generic modal (help / SPC detail) ============ */
 .modal-overlay{position:fixed;inset:0;background:rgba(4,6,10,.72);backdrop-filter:blur(3px);z-index:200;
@@ -683,6 +690,7 @@ table.data-table tr:hover td{background:rgba(255,255,255,.02);}
         <p>LINE-01 · 자동차 엔진마운트 사출성형 품질관제 시스템 · 예방보전 &amp; AI 진단</p>
       </div>
     </div>
+    <button class="help-btn hidden" id="kakaoBtn" title="클릭하면 내 카카오톡으로 알림을 받도록 연결합니다">🔔 카카오 알림 연결</button>
     <button class="help-btn" id="helpBtn" title="사용 설명서 보기">❔ 사용법</button>
     <div class="clock"><small>현재 시각</small><span id="clockText">--:--:--</span></div>
   </header>
@@ -975,6 +983,20 @@ var recovering = {};
 var historyLog = [];
 var notifyLog = [];
 var lastSeenNotifyTop = null; // 이 창에서 마지막으로 팝업을 띄운 알림의 식별자(동기화 재생 중복 방지용)
+
+/* ==================== 카카오톡 '나에게 보내기' 알림 연동 ====================
+   설정 방법:
+   1) https://developers.kakao.com 에서 애플리케이션을 새로 만든다.
+   2) [내 애플리케이션 > 앱 설정 > 플랫폼]에서 "Web" 플랫폼을 추가하고, 이 화면을
+      실제로 올려 쓸 주소(예: https://your-id.github.io)를 사이트 도메인으로 등록한다.
+      ※ 카카오 로그인은 file://로 여는 로컬 파일에서는 동작하지 않는다.
+   3) [앱 설정 > 앱 키]에서 "JavaScript 키"를 복사해 아래 KAKAO_JS_KEY 값에 붙여넣는다.
+   4) [제품 설정 > 카카오 로그인]을 활성화한다.
+   5) [제품 설정 > 카카오 로그인 > 동의항목]에서 "카카오톡 메시지 전송(talk_message)"을
+      "선택 동의"(또는 이용 중 동의)로 설정한다.
+   KAKAO_JS_KEY가 비어 있으면 카카오 연동 버튼 자체가 화면에 나타나지 않는다. */
+var KAKAO_JS_KEY = '02c132a770744a568692f586af9566c9';
+
 var ngLog = [];              // 금일 NG 발생 상세 (시간/관리번호/이상 파라미터/시리얼)
 var cycleStatusLog = [];     // 최근 사이클의 정상/이상 여부 타임라인 (연속 이탈 상세용)
 var issueUidCounter = 1;
@@ -984,6 +1006,7 @@ var holdUid = 1;
 var lineStopped = false;
 var consecutiveDangerTicks = 0;
 var cycleCount = 0, ngCount = 0, serialCounter = 0;
+var resetEpoch = 0; /* 시연 모드 진입/종료 등 '리셋'이 일어날 때마다 증가 — 창 간 동기화 시, 뒤늦게 도착한 예전 값이 새 리셋을 덮어쓰지 않도록 구분하는 용도 */
 var cycleAccum = 0;
 var uptimeSeconds = 0, downtimeSeconds = 0;
 /* 다른 라인들은 이 데모에서 LINE-01과 동일한 수준의 실시간 파라미터 시뮬레이션은
@@ -1178,6 +1201,44 @@ function showToast(msg){
 }
 function serialLabel(n){ return 'LOT'+todayStr()+'-'+pad(n,6); }
 
+function kakaoConnect(){
+  if(typeof Kakao==='undefined' || !Kakao.Auth){ showToast('카카오 SDK를 불러오지 못했습니다. 네트워크 상태를 확인해주세요.'); return; }
+  Kakao.Auth.login({
+    scope:'talk_message',
+    success:function(){ updateKakaoBtn(); showToast('카카오톡 알림이 연결되었습니다. 이제부터 이 브라우저로 알림을 받습니다.'); },
+    fail:function(err){ showToast('카카오 연결에 실패했습니다. 잠시 후 다시 시도해주세요.'); }
+  });
+}
+function kakaoDisconnect(){
+  if(typeof Kakao==='undefined' || !Kakao.Auth){ return; }
+  Kakao.Auth.logout(function(){ updateKakaoBtn(); showToast('카카오톡 알림 연결을 해제했습니다.'); });
+}
+/* 카카오 연동 버튼의 표시 상태(숨김/연결 전/연결됨)를 현재 SDK 로그인 상태에 맞게 갱신 */
+function updateKakaoBtn(){
+  var btn = document.getElementById('kakaoBtn');
+  if(!btn) return;
+  if(!KAKAO_JS_KEY){ btn.classList.add('hidden'); return; }
+  btn.classList.remove('hidden');
+  var connected = !!(typeof Kakao!=='undefined' && Kakao.Auth && Kakao.Auth.getAccessToken && Kakao.Auth.getAccessToken());
+  btn.classList.toggle('connected', connected);
+  btn.textContent = connected ? '✅ 카카오 알림 연결됨' : '🔔 카카오 알림 연결';
+  btn.title = connected ? '클릭하면 이 브라우저의 카카오 알림 연결을 해제합니다' : '클릭하면 내 카카오톡(나와의 채팅)으로 알림을 받도록 연결합니다';
+}
+/* 이 창(브라우저)에서 카카오 로그인이 되어 있을 때만, 새로 뜨는 알림 팝업 1건마다
+   카카오톡 '나에게 보내기'로도 같은 내용을 전송한다. 토큰 만료·네트워크 오류 등
+   어떤 이유로 실패해도 조용히 무시해 대시보드 동작에는 영향을 주지 않는다. */
+function sendKakaoAlert(title, body, tone){
+  try{
+    if(!KAKAO_JS_KEY || typeof Kakao==='undefined' || !Kakao.Auth || !Kakao.Auth.getAccessToken || !Kakao.Auth.getAccessToken()) return;
+    var text = '['+(tone==='crit'?'🚨 긴급':'📡 알림')+'] '+title+'\n'+body;
+    if(text.length>190) text = text.slice(0,187)+'...';
+    Kakao.API.request({
+      url:'/v2/api/talk/memo/default/send',
+      data:{ template_object: JSON.stringify({ object_type:'text', text:text, link:{} }) }
+    }).catch(function(err){ /* 발송 실패는 조용히 무시(토큰 만료 등) */ });
+  }catch(err){ /* 무시 */ }
+}
+
 function pushNotify(title, body, tone){
   /* 화면 우측에 잠깐 떴다 6초 뒤 사라지는 팝업(토스트)만으로는 놓치기 쉬워, 안돈 패널 옆
      여백에 항상 남아있는 알림 피드(notifyLog)에도 함께 기록해 둔다 — 나중에라도
@@ -1204,6 +1265,7 @@ function spawnPushCard(title, body, tone){
     card.style.opacity='0';
     setTimeout(function(){ if(card.parentNode) card.parentNode.removeChild(card); }, 320);
   }, 6000);
+  sendKakaoAlert(title, body, tone);
 }
 function notifySig(n){ return n ? (n.time+'|'+n.title+'|'+n.body) : null; }
 function markNotifySeenTop(){ lastSeenNotifyTop = notifySig(notifyLog[0]); }
@@ -2015,6 +2077,7 @@ function demoToggleAuto(){
 /* 실시간(라이브) 모드 ↔ 시연 모드 전환 시, KPI·이력 등 "오늘 하루치" 누적 상태를 깨끗이
    리셋해 시연이 항상 0에서부터 예측 가능하게 시작하도록 한다. */
 function resetShiftCounters(){
+  resetEpoch++;
   activeIssues = {}; faultRamp = {}; datasetHold = {}; recovering = {};
   lineStopped = false; consecutiveDangerTicks = 0;
   cycleCount = 0; ngCount = 0; serialCounter = 0; cycleAccum = 0;
@@ -3650,6 +3713,19 @@ function init(){
   // 사용 설명서
   document.getElementById('helpBtn').onclick = function(){ openHelpModal(currentView==='admin' ? 'admin' : 'worker'); };
 
+  // 카카오톡 '나에게 보내기' 알림 연동
+  try{
+    if(KAKAO_JS_KEY && typeof Kakao!=='undefined' && !Kakao.isInitialized()){ Kakao.init(KAKAO_JS_KEY); }
+  }catch(err){ /* SDK 미로딩 등 — 무시 */ }
+  var kakaoBtnEl = document.getElementById('kakaoBtn');
+  if(kakaoBtnEl){
+    kakaoBtnEl.onclick = function(){
+      var connected = !!(typeof Kakao!=='undefined' && Kakao.Auth && Kakao.Auth.getAccessToken && Kakao.Auth.getAccessToken());
+      if(connected) kakaoDisconnect(); else kakaoConnect();
+    };
+  }
+  updateKakaoBtn();
+
   // 공용 모달 닫기 (닫기 버튼 / 배경 클릭 / ESC)
   document.getElementById('modalCloseBtn').onclick = closeModal;
   document.getElementById('modalOverlay').addEventListener('click', function(e){
@@ -3708,7 +3784,7 @@ function collectSyncState(){
     recovering: recovering, historyLog: historyLog, notifyLog: notifyLog, ngLog: ngLog,
     cycleStatusLog: cycleStatusLog, issueUidCounter: issueUidCounter, issueRegistry: issueRegistry,
     holdList: holdList, holdUid: holdUid,
-    lineStopped: lineStopped, consecutiveDangerTicks: consecutiveDangerTicks,
+    lineStopped: lineStopped, consecutiveDangerTicks: consecutiveDangerTicks, resetEpoch: resetEpoch,
     cycleCount: cycleCount, ngCount: ngCount, serialCounter: serialCounter, cycleAccum: cycleAccum,
     uptimeSeconds: uptimeSeconds, downtimeSeconds: downtimeSeconds,
     otherLines: otherLines, datasetHold: datasetHold
@@ -3746,7 +3822,6 @@ function applySyncState(snap){
     if(snap.notifyLog) notifyLog = snap.notifyLog;
     if(snap.ngLog) ngLog = snap.ngLog;
     if(snap.cycleStatusLog) cycleStatusLog = snap.cycleStatusLog;
-    if(typeof snap.issueUidCounter==='number') issueUidCounter = Math.max(issueUidCounter, snap.issueUidCounter);
     if(snap.issueRegistry){
       issueRegistry = snap.issueRegistry;
       Object.keys(issueRegistry).forEach(function(uid){
@@ -3757,19 +3832,38 @@ function applySyncState(snap){
       });
     }
     if(snap.holdList) holdList = snap.holdList;
-    if(typeof snap.holdUid==='number') holdUid = Math.max(holdUid, snap.holdUid);
     lineStopped = !!snap.lineStopped;
     consecutiveDangerTicks = snap.consecutiveDangerTicks||0;
-    // 계속 증가하기만 하는 카운터들은 "더 큰 값"을 채택해, 뒤늦게 도착한 오래된
-    // 제안(propose) 때문에 진행 상황이 순간적으로 되돌아가는 일이 없도록 한다.
-    cycleCount = Math.max(cycleCount, snap.cycleCount||0);
-    ngCount = Math.max(ngCount, snap.ngCount||0);
-    serialCounter = Math.max(serialCounter, snap.serialCounter||0);
     if(typeof snap.cycleAccum==='number') cycleAccum = snap.cycleAccum;
-    uptimeSeconds = Math.max(uptimeSeconds, snap.uptimeSeconds||0);
-    downtimeSeconds = Math.max(downtimeSeconds, snap.downtimeSeconds||0);
     if(snap.otherLines) otherLines = snap.otherLines;
     if(snap.datasetHold) datasetHold = snap.datasetHold;
+    // 계속 증가하기만 하는 카운터들은 기본적으로 "더 큰 값"을 채택해, 뒤늦게 도착한
+    // 오래된 제안(propose) 때문에 진행 상황이 순간적으로 되돌아가는 일이 없도록 한다.
+    // 단, 시연 모드 진입/종료처럼 "의도적으로 0으로 리셋"하는 경우는 예외로 취급해야
+    // 하므로, resetEpoch(리셋이 일어날 때마다 증가하는 값)를 함께 비교한다.
+    var incomingEpoch = typeof snap.resetEpoch==='number' ? snap.resetEpoch : resetEpoch;
+    if(incomingEpoch > resetEpoch){
+      // 다른 창에서 더 최신 리셋이 일어났다 — 해당 리셋 값을 그대로 채택한다.
+      resetEpoch = incomingEpoch;
+      cycleCount = snap.cycleCount||0;
+      ngCount = snap.ngCount||0;
+      serialCounter = snap.serialCounter||0;
+      uptimeSeconds = snap.uptimeSeconds||0;
+      downtimeSeconds = snap.downtimeSeconds||0;
+      issueUidCounter = typeof snap.issueUidCounter==='number' ? snap.issueUidCounter : issueUidCounter;
+      holdUid = typeof snap.holdUid==='number' ? snap.holdUid : holdUid;
+    } else if(incomingEpoch === resetEpoch){
+      // 같은 리셋 시점 안에서는 기존과 동일하게 "더 큰 값"을 채택해 순서가 뒤바뀐
+      // 메시지로 인한 되돌림을 방지한다.
+      cycleCount = Math.max(cycleCount, snap.cycleCount||0);
+      ngCount = Math.max(ngCount, snap.ngCount||0);
+      serialCounter = Math.max(serialCounter, snap.serialCounter||0);
+      uptimeSeconds = Math.max(uptimeSeconds, snap.uptimeSeconds||0);
+      downtimeSeconds = Math.max(downtimeSeconds, snap.downtimeSeconds||0);
+      if(typeof snap.issueUidCounter==='number') issueUidCounter = Math.max(issueUidCounter, snap.issueUidCounter);
+      if(typeof snap.holdUid==='number') holdUid = Math.max(holdUid, snap.holdUid);
+    }
+    // incomingEpoch < resetEpoch: 이 창에 이미 더 최신 리셋이 반영되어 있으므로 오래된 값은 무시.
     renderedGaugeIds = null;
     replayNewNotifies();
     renderAll();
