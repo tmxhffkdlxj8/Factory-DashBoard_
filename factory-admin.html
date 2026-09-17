@@ -111,7 +111,7 @@ h1,h2,h3{text-wrap:balance;margin:0;}
 
 /* ============ header ============ */
 .topbar{
-  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  display:flex;align-items:center;gap:10px 13px;flex-wrap:wrap;
   padding:20px 0 16px;border-bottom:1px solid var(--border);margin-bottom:20px;
 }
 .brand{display:flex;align-items:center;gap:12px;margin-right:auto;}
@@ -131,8 +131,12 @@ h1,h2,h3{text-wrap:balance;margin:0;}
   transition:background .2s,color .2s;
 }
 .view-switch button.active{background:var(--accent);color:#022;}
-.clock{font-family:var(--font-num);font-size:15px;color:var(--text-dim);text-align:right;min-width:150px;}
-.clock small{display:block;font-family:var(--font-body);font-size:11px;color:var(--text-faint);font-weight:400;letter-spacing:.03em;}
+/* 현재 시각 — 헤더 오른쪽 끝, 버튼들과 같은 줄의 남는 자리에 들어간다. 예전에는
+   고정 폭(150px) 때문에 버튼 줄이 넘쳐 시계만 아래 줄로 밀려나면서 헤더에 빈 줄이
+   생겼으므로, 폭 제한을 없애 내용만큼만 차지하게 하고(약 80px) 줄바꿈이 일어나도
+   margin-left:auto로 항상 오른쪽 빈 자리에 붙도록 했다. */
+.clock{font-family:var(--font-num);font-size:15px;color:var(--text-dim);text-align:right;margin-left:auto;flex:none;}
+.clock small{display:block;font-family:var(--font-body);font-size:11px;color:var(--text-faint);font-weight:400;letter-spacing:.03em;white-space:nowrap;}
 
 /* ============ status strip ============ */
 .status-strip{
@@ -676,6 +680,22 @@ table.data-table tr:hover td{background:rgba(255,255,255,.02);}
   padding:18px 20px 20px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;
 }
 .hero-card-lamp{align-items:center;text-align:center;}
+/* 램프 카드의 제목줄은 다른 카드와 같은 높이에 고정하고, 램프·상태 알약은 남는 높이
+   가운데에 모아 놓는다 — 옆의 생산 현황 카드가 길어져도 램프가 위로 쏠리지 않는다. */
+.hero-lamp-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;}
+/* 설비 신호등 카드 안의 라인 상태 알약 — 라인 자동 정지처럼 문구가 길어지면 카드
+   폭에 맞춰 두 줄로 접히게 한다(원래 상태 스트립에서는 한 줄로 길게 놓였다). */
+#equipHeroCard .pill-line{font-size:13px;padding:8px 16px;line-height:1.35;max-width:100%;}
+#equipHeroCard .pill-line[style*="cursor: pointer"]:hover{filter:brightness(1.12);}
+/* 램프 카드 아래쪽의 작은 보조 지표(연속 이탈) — 칩처럼 눌러서 상세를 볼 수 있다. */
+.hero-sub-stat{
+  background:none;border:none;padding:2px 4px;font-family:var(--font-body);
+  font-size:11.5px;color:var(--text-faint);cursor:pointer;display:flex;align-items:center;gap:5px;
+  border-radius:6px;transition:color .15s;
+}
+.hero-sub-stat b{font-family:var(--font-num);font-size:12.5px;color:var(--text-dim);}
+.hero-sub-stat:hover{color:var(--accent);}
+.hero-sub-stat:hover b,.hero-sub-stat:hover .chip-hint{color:var(--accent);}
 .hero-card-head{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;}
 .hero-card-head .lamp-name{font-size:13.5px;}
 .hero-card-lamp .hero-card-head{justify-content:center;position:relative;}
@@ -704,10 +724,23 @@ table.data-table tr:hover td{background:rgba(255,255,255,.02);}
 #workerHeroCard .worker-lamp-mini .al-dot{width:42px;height:17px;border-radius:4px;}
 /* 생산 현황 카드 */
 .prod-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 18px;width:100%;}
-.prod-stat{display:flex;flex-direction:column;gap:3px;}
-.prod-stat .ps-label{font-size:11px;color:var(--text-faint);}
-.prod-stat .ps-value{font-family:var(--font-num);font-size:18px;font-weight:700;color:var(--text);}
-.prod-goal-row{display:flex;align-items:center;gap:14px;padding-top:14px;border-top:1px solid var(--border);width:100%;}
+/* 지표 타일 — 대부분 버튼이라서(누르면 계산식·상세 내역 팝업) 버튼 기본 스타일을
+   지우고 일반 텍스트처럼 보이게 한 뒤, 누를 수 있는 타일에만 hover 표시를 준다. */
+.prod-stat{
+  display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;
+  background:none;border:none;padding:0;font-family:inherit;color:inherit;
+}
+.prod-stat .ps-label{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-faint);}
+.prod-stat .ps-value{font-family:var(--font-num);font-size:18px;font-weight:700;color:var(--text);line-height:1.2;}
+.prod-stat .ps-value.sm{font-size:14.5px;}
+.prod-stat .ps-sub{font-size:10.5px;color:var(--text-faint);}
+.prod-stat .ps-sub b{font-family:var(--font-num);font-size:11.5px;color:var(--crit);font-weight:700;}
+.prod-stat.clickable{cursor:pointer;}
+.prod-stat.clickable:hover .ps-value,.prod-stat.clickable:hover .ps-label,.prod-stat.clickable:hover .chip-hint{color:var(--accent);}
+.prod-goal-row{display:flex;align-items:center;gap:14px;padding-top:14px;border-top:1px solid var(--border);width:100%;
+  background:none;border-left:none;border-right:none;border-bottom:none;text-align:left;font-family:inherit;color:inherit;}
+.prod-goal-row.clickable{cursor:pointer;}
+.prod-goal-row.clickable:hover .prod-goal-text b,.prod-goal-row.clickable:hover .chip-hint{color:var(--accent);}
 .prod-goal-donut{flex:none;width:64px;height:64px;position:relative;}
 .prod-goal-donut svg{width:100%;height:100%;display:block;}
 .prod-goal-donut .pgd-pct{
@@ -988,6 +1021,23 @@ table.data-table tr:hover td{background:rgba(255,255,255,.02);}
 .dcc-confirm-btn:hover{filter:brightness(1.08);}
 .dcc-cancel-link{background:none;border:none;color:var(--text-faint);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;padding:4px;}
 .dcc-cancel-link:hover{color:var(--text-dim);}
+/* 팝업 맨 아래 "조치 완료" 줄 — 부서를 하나씩 되돌리는 호출 취소와 구분되도록 위쪽에
+   구분선을 두고, 긍정적인 마무리 동작이라는 뜻에서 초록(정상) 계열로 칠한다. */
+.dcc-done-row{
+  grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin-top:18px;padding-top:16px;border-top:1px dashed var(--border-strong);
+}
+.dcc-done-text{display:flex;flex-direction:column;gap:3px;flex:1;min-width:220px;}
+.dcc-done-text b{font-family:var(--font-display);font-weight:700;font-size:13.5px;color:var(--text);}
+.dcc-done-text span{font-size:11.5px;color:var(--text-faint);line-height:1.65;}
+.dcc-done-text span b{font-family:var(--font-num);font-size:11.5px;color:var(--good);}
+.dcc-done-btn{
+  flex:none;border:1px solid rgba(61,220,151,.45);background:var(--good-dim);color:var(--good);
+  font-family:var(--font-display);font-weight:700;font-size:14.5px;padding:12px 24px;
+  border-radius:var(--radius-pill);transition:background .15s,color .15s;
+}
+.dcc-done-btn:hover:not(:disabled){background:var(--good);color:#04241a;}
+.dcc-done-btn:disabled{opacity:.4;cursor:not-allowed;}
 
 .sync-wait-banner{
   position:sticky;top:0;z-index:59;
@@ -1397,28 +1447,6 @@ var DEPT_CALL_LIST = [
   { id:'material', icon:'📦', name:'자재팀' }
 ];
 var DEPT_CALL_BY_ID = {}; DEPT_CALL_LIST.forEach(function(d){ DEPT_CALL_BY_ID[d.id]=d; });
-
-/* ==================== Discord 알림 연동 (담당 부서 호출 전용) ====================
-   담당 부서를 호출하면, 그 부서의 Discord 채널로만 알림이 즉시 전달된다(다른 부서
-   채널에는 가지 않는다). Discord는 브라우저가 웹훅에 직접 요청하는 것을 막아두어서
-   (CORS), 중계 서버(Cloudflare Workers, 무료)를 하나 거친다 — 로그인이나 토큰 교환
-   같은 절차는 전혀 없다. 설정 방법은 함께 받은 discord-worker.js 파일 상단 주석 참고.
-   중계 서버 주소 하나만 아래 DISCORD_WORKER_URL에 넣으면 바로 동작한다. */
-var DISCORD_WORKER_URL = 'https://lively-snow-b476.tmxhffkdlxj.workers.dev/notify';
-/* 실제 상태 변경은 항상 리더 화면에서만 일어나므로(callDeptReal 자체가 이미 리더
-   탭에서만 호출됨), 이 함수는 그 시점에 한 번만 호출되어 중복 전송되지 않는다. */
-function sendDiscordDeptAlert(dept, level, causes){
-  try{
-    if(!DISCORD_WORKER_URL || !dept) return;
-    if(typeof isLeader==='function' && !isLeader()) return;
-    var body = '현장에서 '+dept.icon+' '+dept.name+'을(를) '+(level?level+'단계로 ':'')+'호출했습니다.'+
-      ((causes&&causes.length)?' (원인: '+causes.join(' · ')+')':'')+' 확인 후 조치해 주세요.';
-    fetch(DISCORD_WORKER_URL, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ title:'📣 담당자 호출 — '+dept.name, body:body, tone:'crit', team: dept.id, source:'admin' })
-    }).catch(function(err){ /* 발송 실패는 조용히 무시 */ });
-  }catch(err){ /* 무시 */ }
-}
 
 /* 담당자 호출 시 선택하는 호출 단계(1~5) — 숫자가 낮을수록 경미, 높을수록 긴급하다.
    단계에 따라 아래 LEVEL_DEPT_MAP에서 선택 가능한 부서 범위가 달라진다. */
@@ -2338,11 +2366,7 @@ function handleBreach(cfg, sampleIndex){
     checklist:c.checklist.map(function(t){return {icon:t.icon, text:t.text, done:false};})
       .concat([{text:'', done:false, custom:true}]),
     startedAt:startedAt, startSerial:serialCounter,
-    rampStartSample:rampStartSample, breachSample:sampleIndex,
-    /* 작업자가 AI 진단(수락/거절)에 아직 응답하지 않았는지 여부 — 작업자 안돈램프의
-       파랑(조치 필요) 판단 기준으로 쓰인다. 응답 즉시 true로 바뀌며, 값이 이미 정상
-       범위로 돌아온 뒤에도(조치 완료 전까지는) 이 객체가 유지되므로 계속 참조된다. */
-    decided:false
+    rampStartSample:rampStartSample, breachSample:sampleIndex
   };
   /* NG 상세 드릴다운(관리번호별 상세보기)에서 나중에 참조할 수 있도록 이상 발생 시점의
      전체 맥락(원인·제안·시작 설정값)을 별도 레지스트리에 기록해 둔다. 조치가 완료되면
@@ -3302,37 +3326,28 @@ function renderStatusStrip(){
     document.getElementById('machineStateText').textContent = lineStopped ? '정지 중' : '가동 중';
   }
 
-  document.getElementById('stCycle').textContent = cycleCount;
-  var prodGoalEl = document.getElementById('stProdGoal');
-  if(prodGoalEl) prodGoalEl.textContent = cycleCount+'/'+TARGETS.prod+'개';
-  document.getElementById('stNg').textContent = ngCount;
-  var defectPct = cycleCount>0 ? (ngCount/cycleCount*100) : 0;
-  document.getElementById('stYield').textContent = defectPct.toFixed(1)+'%';
-  var uptimePct = (uptimeSeconds/(uptimeSeconds+downtimeSeconds+0.0001))*100;
-  document.getElementById('stUptime').textContent = uptimePct.toFixed(1)+'%';
-  document.getElementById('stConsec').textContent = consecutiveDangerTicks+'/'+settings.autoStopThreshold;
-  var mttrEl = document.getElementById('stMttr');
-  var mtbfEl = document.getElementById('stMtbf');
-  if(mttrEl || mtbfEl){
-    var mm = computeMttrMbtf();
-    if(mttrEl) mttrEl.textContent = mm.mttrMs!=null ? formatElapsedMs(mm.mttrMs) : '집계 없음';
-    if(mtbfEl) mtbfEl.textContent = mm.mtbfSec!=null ? formatElapsedMs(mm.mtbfSec*1000) : '집계 없음';
-  }
-
-  /* ---- 작업자 화면 상단 "생산 현황" 히어로 카드 — 위에서 이미 계산한
-     cycleCount/defectPct/uptimePct를 그대로 재사용하고, 생산 속도만 사이클타임
+  /* ---- 작업자 화면 상단 히어로 카드의 지표 — 예전에는 헤더 아래 알약형 칩을 길게
+     늘어놓은 "상태 스트립"이 같은 값을 보여줬지만, 지금은 카드가 그 역할을 모두
+     대신하므로 스트립을 없애고 이 카드에 값을 채운다. 생산 속도만 사이클타임
      (초/개)을 분당 개수로 환산해 새로 구한다. 카드가 없는 화면(admin.html)에는
      #heroProd 등의 요소가 없으므로 조용히 건너뛴다. */
+  var defectPct = cycleCount>0 ? (ngCount/cycleCount*100) : 0;
+  var uptimePct = (uptimeSeconds/(uptimeSeconds+downtimeSeconds+0.0001))*100;
   var heroProdEl = document.getElementById('heroProd');
   if(heroProdEl){
     heroProdEl.textContent = cycleCount+'개';
     document.getElementById('heroUptime').textContent = uptimePct.toFixed(1)+'%';
     document.getElementById('heroYield').textContent = defectPct.toFixed(1)+'%';
+    document.getElementById('heroNg').textContent = ngCount;
+    document.getElementById('heroConsec').textContent = consecutiveDangerTicks+'/'+settings.autoStopThreshold;
     var heroSpeedEl = document.getElementById('heroSpeed');
     if(heroSpeedEl){
       var ctVal = (state.cycleTime && state.cycleTime.value) ? state.cycleTime.value : 0;
       heroSpeedEl.textContent = ctVal>0 ? (60/ctVal).toFixed(1)+'개/분' : '-';
     }
+    var mm = computeMttrMbtf();
+    document.getElementById('heroMttr').textContent = mm.mttrMs!=null ? formatElapsedMs(mm.mttrMs) : '집계 없음';
+    document.getElementById('heroMtbf').textContent = mm.mtbfSec!=null ? formatElapsedMs(mm.mtbfSec*1000) : '집계 없음';
     var goalPct = clamp(TARGETS.prod>0 ? (cycleCount/TARGETS.prod*100) : 0, 0, 100);
     document.getElementById('heroGoalCurrent').textContent = cycleCount;
     document.getElementById('heroGoalTarget').textContent = TARGETS.prod;
@@ -3367,11 +3382,6 @@ var ANDON_LAMP_STAGES = ['normal','warn','danger'];
    위로 오도록 이상(빨강) → 주의(노랑) → 정상(초록) 순으로 배치한다 — 우선순위
    판정 로직(overallAndonState)과는 무관한, 어디까지나 세로형 하우징의 표시 순서다. */
 var ANDON_LAMP_DISPLAY_ORDER = ['danger','warn','normal'];
-/* 대형 "설비 신호등" 히어로 카드(작업자 화면 상단)에 표시할 문구 — 카드 안의
-   작은 뱃지는 STATUS_LABEL(정상/주의/이상)을 그대로 쓰고, 램프 아래 큰 알약형
-   문구는 조금 더 풀어서 설명한다. 두 표시 모두 renderAndonLamp()가 있을 때만
-   채우므로(요소가 없으면 아무 일도 하지 않음) admin.html에는 영향이 없다. */
-var EQUIP_HERO_PILL_TEXT = { normal:'정상 가동', warn:'주의 필요', danger:'이상 발생' };
 function overallAndonState(){
   var rank = {normal:0, warn:1, danger:2};
   var best = 'normal';
@@ -3402,20 +3412,21 @@ function renderAndonLamp(containerId){
     var color = STATUS_COLOR[stage];
     return '<span class="al-dot'+(lit?' al-dot-lit':'')+'" style="'+lampDotStyle(color,lit)+'"></span>';
   }).join('');
-  /* 작업자 화면의 "설비 신호등" 히어로 카드용 뱃지·알약형 문구 — 카드가 없는
+  /* 작업자 화면의 "설비 신호등" 히어로 카드용 뱃지 — 램프 아래 알약형 문구는 라인
+     상태 알약(#lineStatusPill)이 맡으므로 여기서는 건드리지 않는다. 카드가 없는
      화면(admin.html)에서는 해당 id의 요소가 없으므로 조용히 건너뛴다. */
   var badgeEl = document.getElementById('equipHeroBadge');
   if(badgeEl){ badgeEl.className = 'hero-badge '+st.status; badgeEl.textContent = STATUS_LABEL[st.status]; }
-  var pillEl = document.getElementById('equipHeroPill');
-  if(pillEl){ pillEl.className = 'hero-pill '+st.status; pillEl.textContent = EQUIP_HERO_PILL_TEXT[st.status]; }
 }
 
-/* ---- 작업자 안돈램프 — 위 안돈램프(정상/주의/이상)는 "설비·공정 상태"를 그대로
-   보여주는 설비 신호등이고, 이 램프는 그와 별개로 IEC 60073 / IEC 60204-1 표시등
-   색상 표준(빨강·노랑·파랑·초록·흰색 5색)을 참고해 "작업자가 지금 무엇을 해야
-   하는가"를 보여준다. 작업자 화면에만 표시한다.
-   우선순위: 빨강(설비 위험/라인 정지) > 노랑(설비 주의) > 파랑(AI 진단 미응답 건
-   존재) > 초록(정상) — 흰색(중립 정보)은 이 데모에서는 점등 조건을 두지 않는다. */
+/* ---- 작업자 안돈램프 — 설비 신호등(정상/주의/이상 3색)이 "설비·공정이 지금 어떤
+   상태인가"를 자동으로 보여주는 반면, 이 램프는 오직 "작업자가 직접 누른 호출"만
+   보여준다. 즉 설비에 이상이 생기거나 라인이 정지해도 이 램프는 저절로 바뀌지
+   않으며, 🆘 담당 부서 호출에서 작업자가 고른 호출 단계(1~5)에만 반응한다 —
+   설비 상태는 옆의 설비 신호등이, 사람의 요청은 이 램프가 맡는 식으로 두 정보를
+   완전히 분리한다. 호출을 해제하면 초록(호출 없음)으로 돌아온다.
+   색상은 IEC 60073 / IEC 60204-1 표시등 색상 표준(빨강·노랑·파랑·초록·흰색 5색)의
+   의미를 참고해 호출 단계에 배정했다. 작업자 화면에만 표시한다. */
 /* 화면에 표시하는 순서(위→아래)는 빨강·노랑·초록·파랑·흰색이며, 점등 우선순위 로직
    (overallWorkerAndonState)과는 별개다 — 아래 순서는 어디까지나 이 화면의 세로형
    램프 하우징에서 위→아래로 그리는 순서일 뿐이다. */
@@ -3425,27 +3436,42 @@ var WORKER_LAMP_ORDER = ['red','yellow','green','blue','white'];
    파랑·흰색만 이 램프 전용 색이라 별도 클래스(blue/white)를 둔다. */
 var WORKER_HERO_PILL_CLASS = { red:'danger', yellow:'warn', green:'normal', blue:'blue', white:'white' };
 var WORKER_LAMP_META = {
-  red:    { label:'위험',    color:'#fb4d68' },
-  yellow: { label:'경보',    color:'#f5b84e' },
-  blue:   { label:'조치 요청', color:'#4d8dfb' },
-  green:  { label:'정상',    color:'#3ddc97' },
-  white:  { label:'대기',    color:'#eef2f7' }
+  red:    { label:'위험',      color:'#fb4d68' },
+  yellow: { label:'경보',      color:'#f5b84e' },
+  blue:   { label:'조치 요청',  color:'#4d8dfb' },
+  green:  { label:'호출 없음',  color:'#3ddc97' },
+  white:  { label:'대기',      color:'#eef2f7' }
 };
 var WORKER_LAMP_DESC = {
-  red: '공정 파라미터 중 하나라도 위험(이상) 상태이거나 라인이 자동 정지된 경우 — 즉각적인 확인·조치가 필요합니다.',
-  yellow: '공정 파라미터 중 하나라도 주의 상태인 경우 — 악화되기 전에 확인이 필요한 경보입니다.',
-  blue: 'AI 진단(이상 감지)에 아직 수락/거절로 응답하지 않은 건이 남아있는 경우 — 값이 이미 정상으로 돌아왔더라도, 작업자의 확인 응답이 필요합니다.',
-  green: '설비 이상·경보가 없고, 응답을 기다리는 AI 진단도 없는 정상 상태입니다.',
-  white: '중립 정보(예: 전원 투입, 대기 등)를 위해 표준에 정의된 색상이며, 이 데모에서는 아직 점등 조건을 두지 않았습니다.'
+  red: '작업자가 담당 부서를 <b>4~5단계(긴급·매우긴급)</b>로 호출한 상태입니다 — 즉각적인 지원이 필요하다는 뜻으로, 램프가 깜빡입니다.',
+  yellow: '작업자가 담당 부서를 <b>3단계(보통)</b>로 호출한 상태입니다 — 생산에 지장이 생기기 전에 확인이 필요한 요청입니다.',
+  blue: '작업자가 담당 부서를 <b>2단계(주의)</b>로 호출한 상태입니다 — 조치·지원 요청이 접수되어 담당 부서의 확인을 기다립니다.',
+  green: '진행 중인 담당 부서 호출이 없는 상태입니다. 설비에 이상이 있더라도 작업자가 호출하지 않았다면 이 램프는 초록으로 유지됩니다(설비 상태는 옆의 <b>설비 신호등</b>이 보여줍니다).',
+  white: '작업자가 담당 부서를 <b>1단계(경미)</b>로 호출해 지원을 기다리는 중입니다 — 급하지는 않지만 요청이 접수되어 있다는 중립 정보 표시입니다.'
 };
+/* 호출 단계(1~5) → 점등할 램프 색. 3단계·5단계는 호출 단계 버튼 색(CALL_LEVELS)과
+   램프 색이 그대로 일치하고, 1·2단계는 "설비는 멀쩡하지만 사람이 필요하다"는 뜻의
+   흰색(대기)·파랑(조치 요청)을, 4단계는 5단계와 같은 빨강(위험)을 쓴다. */
+var CALL_LEVEL_LAMP = { 1:'white', 2:'blue', 3:'yellow', 4:'red', 5:'red' };
+/* 현재 호출 중인 부서 요약 — 가장 높은 호출 단계와 부서 이름들을 함께 돌려준다. */
+function activeDeptCallSummary(){
+  var names = [], level = 0;
+  DEPT_CALL_LIST.forEach(function(d){
+    var st = deptCalls[d.id];
+    if(st && st.active){
+      names.push(d.name);
+      if(st.level && st.level > level) level = st.level;
+    }
+  });
+  return { count:names.length, level:level, names:names };
+}
+/* 점등 색은 오직 작업자의 담당 부서 호출로만 정해진다 — 설비 상태(위험·주의)나 AI
+   진단 응답 여부는 여기서 일부러 보지 않는다(그쪽은 설비 신호등의 몫). 여러 부서를
+   서로 다른 단계로 호출했다면 가장 높은 단계를 기준으로 삼는다. */
 function overallWorkerAndonState(){
-  var anyDanger = CONFIG.some(function(cfg){ return state[cfg.id].status==='danger'; });
-  if(anyDanger || lineStopped) return 'red';
-  var anyWarn = CONFIG.some(function(cfg){ return state[cfg.id].status==='warn'; });
-  if(anyWarn) return 'yellow';
-  var pendingDecision = Object.keys(activeIssues).some(function(pid){ return activeIssues[pid] && !activeIssues[pid].decided; });
-  if(pendingDecision) return 'blue';
-  return 'green';
+  var call = activeDeptCallSummary();
+  if(!call.count) return 'green';
+  return CALL_LEVEL_LAMP[call.level] || 'blue';
 }
 function renderWorkerAndonLamp(containerId){
   var el = document.getElementById(containerId);
@@ -3457,12 +3483,20 @@ function renderWorkerAndonLamp(containerId){
     var color = WORKER_LAMP_META[key].color;
     return '<span class="al-dot'+(lit?' al-dot-lit':'')+'" style="'+lampDotStyle(color,lit)+'"></span>';
   }).join('');
-  /* 작업자 안돈램프 히어로 카드용 알약형 문구 — 카드가 없는 화면에서는 해당 id의
-     요소가 없으므로 조용히 건너뛴다. */
+  /* 작업자 안돈램프 히어로 카드용 알약형 문구 + 그 아래 호출 현황 한 줄 — 카드가
+     없는 화면에서는 해당 id의 요소가 없으므로 조용히 건너뛴다. */
   var pillEl = document.getElementById('workerHeroPill');
   if(pillEl){
     pillEl.className = 'hero-pill '+WORKER_HERO_PILL_CLASS[stage];
     pillEl.textContent = WORKER_LAMP_META[stage].label;
+  }
+  var callEl = document.getElementById('workerCallState');
+  if(callEl){
+    var call = activeDeptCallSummary();
+    callEl.textContent = call.count===0
+      ? '없음'
+      : (call.level ? call.level+'단계 · ' : '')+call.names[0]+(call.count>1 ? ' 외 '+(call.count-1) : '');
+    callEl.style.color = call.count===0 ? '' : WORKER_LAMP_META[CALL_LEVEL_LAMP[call.level]||'blue'].color;
   }
 }
 /* 화면 상단 ⓘ 버튼 — "작업자 안돈램프"가 설비 신호등과 어떻게 다른지, 5색이 각각
@@ -3470,12 +3504,21 @@ function renderWorkerAndonLamp(containerId){
 function openWorkerLampInfoModal(){
   openModal(
     '<h3>🚦 작업자 안돈램프란?</h3>'+
-    '<p class="sec-sub" style="margin-bottom:14px;">화면 상단의 <b>안돈램프(정상·주의·이상 3색)</b>는 설비·공정 자체의 상태를 그대로 보여주는 <b>설비 신호등</b>입니다. 그 옆의 <b>작업자 안돈램프</b>는 이와는 별개로, IEC 60073 / IEC 60204-1 표시등 색상 표준의 5색 의미를 참고해 <b>지금 작업자가 무엇을 해야 하는지</b>를 보여줍니다.</p>'+
+    '<p class="sec-sub" style="margin-bottom:14px;">왼쪽의 <b>설비 신호등(정상·주의·이상 3색)</b>은 설비·공정 자체의 상태를 자동으로 보여줍니다. 반면 <b>작업자 안돈램프</b>는 <b>오직 작업자가 직접 누른 🆘 담당 부서 호출</b>에만 반응합니다 — 설비에 이상이 생기거나 라인이 정지해도 작업자가 호출하지 않았다면 이 램프는 켜지지 않습니다. <b>설비가 말하는 상태</b>와 <b>사람이 요청한 도움</b>을 서로 다른 램프로 분리해, 현장에서 두 가지를 혼동하지 않게 하기 위한 구성입니다. 색상은 IEC 60073 / IEC 60204-1 표시등 색상 표준의 5색 의미를 참고해 호출 단계에 배정했습니다.</p>'+
     WORKER_LAMP_ORDER.map(function(key){
       var m = WORKER_LAMP_META[key];
       return '<div class="lamp-legend-row">'+
         '<span class="lamp-legend-dot" style="background:'+m.color+';box-shadow:0 0 8px '+m.color+';"></span>'+
         '<div class="lamp-legend-text"><b style="color:'+m.color+';">'+m.label+'</b><span>'+WORKER_LAMP_DESC[key]+'</span></div>'+
+      '</div>';
+    }).join('')+
+    '<h4 style="margin:20px 0 8px;">📣 호출 단계별 점등 색</h4>'+
+    '<p class="sec-sub" style="margin-bottom:12px;line-height:1.7;">작업자가 <b>🆘 담당 부서 호출</b>에서 고른 <b>호출 단계</b>가 그대로 램프 색이 됩니다. 여러 부서를 서로 다른 단계로 호출했다면 <b>가장 높은 단계</b>가 기준이 되고, 호출을 모두 해제하면 초록(호출 없음)으로 돌아옵니다.</p>'+
+    CALL_LEVELS.map(function(lv){
+      var m = WORKER_LAMP_META[CALL_LEVEL_LAMP[lv.level]];
+      return '<div class="lamp-legend-row">'+
+        '<span class="lamp-legend-dot" style="background:'+m.color+';box-shadow:0 0 8px '+m.color+';"></span>'+
+        '<div class="lamp-legend-text"><b style="color:'+m.color+';">'+lv.level+'단계 · '+lv.sub+'</b><span>이 단계로 호출하면 <b style="color:'+m.color+';">'+m.label+'</b> 램프가 켜집니다.</span></div>'+
       '</div>';
     }).join('')+
     '<p class="sec-sub" style="margin-top:14px;line-height:1.7;">실제 산업 현장의 시그널타워(적층식 표시등)는 보통 위에서 아래로 <b>빨강 → 노랑 → 파랑 → 초록 → 흰색</b> 순서로 배치합니다(IEC 60204-1:2016 해설 기준). 이 화면의 램프는 위에서 아래로 <b>빨강 → 노랑 → 초록 → 파랑 → 흰색</b> 순서로 표시합니다.</p>'
@@ -3496,7 +3539,6 @@ function callDeptReal(deptId, level, causes){
     '현장에서 '+dept.icon+' '+dept.name+'을(를) '+(level?level+'단계로 ':'')+'호출했습니다.'+(causes.length?' (원인: '+causes.join(' · ')+')':'')+' 확인 후 조치해 주세요.',
     'warn'
   );
-  sendDiscordDeptAlert(dept, level, causes);
   renderAll();
 }
 function callDeptAction(deptId, level, causes){
@@ -3511,6 +3553,25 @@ function cancelDeptReal(deptId){
 function cancelDeptAction(deptId){
   if(isLeader()){ cancelDeptReal(deptId); }
   else { SyncBus.sendCommand('cancelDept', {deptId:deptId}); }
+}
+/* ---- "조치 완료" — 호출했던 부서가 현장에 와서 조치를 마쳤을 때 누른다. 부서를 하나씩
+   취소하는 것과 달리 진행 중인 호출을 한 번에 모두 초기화하고, 그 사실을 🔔 알림 이력에
+   남겨 관리자 화면에서도 언제 조치가 끝났는지 확인할 수 있게 한다. 단순 취소(실수로 부른
+   경우)와 조치 완료(실제로 해결된 경우)를 구분해 기록하기 위해 별도 동작으로 둔다. */
+function completeDeptCallsReal(){
+  var done = DEPT_CALL_LIST.filter(function(d){ return deptCalls[d.id] && deptCalls[d.id].active; });
+  if(!done.length) return;
+  done.forEach(function(d){ deptCalls[d.id] = { active:false, calledAt:null, level:null, causes:[] }; });
+  pushNotify(
+    '✅ 담당 부서 호출 조치 완료',
+    '조치가 완료되었습니다 — '+done.map(function(d){ return d.icon+' '+d.name; }).join(', ')+' 호출 '+done.length+'건이 모두 초기화되었습니다.'
+  );
+  resetDeptCallFlow();
+  renderAll();
+}
+function completeDeptCallsAction(){
+  if(isLeader()){ completeDeptCallsReal(); }
+  else { SyncBus.sendCommand('completeDeptCalls', {}); }
 }
 
 /* ---- 담당자 호출 "새로 호출하기" 흐름 — ①호출 단계(1~5, 단일 선택) → ②단계별로
@@ -3559,7 +3620,14 @@ function handleDeptCallClick(e){
     var deptId = el.dataset.dept;
     var dept = DEPT_CALL_BY_ID[deptId]; if(!dept) return;
     cancelDeptAction(deptId);
-    showToast(dept.icon+' '+dept.name+' 호출을 해제했습니다.');
+    showToast('🔕 호출이 취소되었습니다 — '+dept.icon+' '+dept.name);
+    return;
+  }
+  /* 조치 완료 — 진행 중인 호출을 모두 초기화하고, 결과는 🔔 알림 팝업으로 안내한다
+     (팝업이 가려지지 않도록 호출 팝업은 닫는다). */
+  if(e.target.closest('#dccDoneBtn')){
+    completeDeptCallsAction();
+    closeModal();
     return;
   }
   if((el = e.target.closest('.dcc-level-btn'))){ selectDeptCallLevel(Number(el.dataset.level)); return; }
@@ -3572,7 +3640,8 @@ function handleDeptCallClick(e){
    interactive=true(작업자 화면 팝업): 별도 상태 카드 없이, ①호출 단계 → ②부서
    선택 → ③불량 발생 원인 선택을 화살표로 이어진 3개의 박스(마법사 형태)로 보여
    준다. 이미 호출 중인 부서는 ②부서 선택 박스 안에 상태 카드로 함께 나타나며,
-   거기서 바로 호출 해제할 수 있다(별도의 상단 현황 목록을 두지 않는다). */
+   거기서 바로 호출 취소할 수 있다(별도의 상단 현황 목록을 두지 않는다). 맨 아래에는
+   호출 전체를 한 번에 정리하는 "조치 완료" 줄이 따로 붙는다. */
 function renderDeptCallGrid(containerId, interactive){
   var el = document.getElementById(containerId);
   if(!el) return;
@@ -3628,7 +3697,7 @@ function renderDeptCallGrid(containerId, interactive){
             return '<div class="dept-call-card active dcc-inline-card">'+
               '<div class="dcc-head"><span class="dcc-icon">'+d.icon+'</span>'+d.name+'</div>'+
               '<div class="dcc-status">'+parts.join(' · ')+'</div>'+
-              '<button type="button" class="dept-call-btn active" data-dept="'+d.id+'">🔕 호출 해제</button>'+
+              '<button type="button" class="dept-call-btn active" data-dept="'+d.id+'">🔕 호출 취소</button>'+
             '</div>';
           }
           var on = flow.deptIds.indexOf(d.id)>=0;
@@ -3661,7 +3730,19 @@ function renderDeptCallGrid(containerId, interactive){
     footer = '<div class="dcc-confirm-row"><button type="button" class="dcc-cancel-link" id="dccCancelBtn">✕ 처음부터 다시 선택</button></div>';
   }
 
-  el.innerHTML = '<div class="dcc-wizard">'+box1+arrow+box2+arrow+box3+'</div>'+footer;
+  /* 팝업 맨 아래 "조치 완료" — 호출했던 부서가 와서 조치를 마쳤을 때 누르면 진행 중인
+     호출이 한 번에 초기화된다. 진행 중인 호출이 없으면 누를 일이 없으므로 비활성화한다. */
+  var activeCalls = DEPT_CALL_LIST.filter(function(d){ return deptCalls[d.id] && deptCalls[d.id].active; });
+  var doneRow = '<div class="dcc-done-row">'+
+    '<div class="dcc-done-text"><b>✅ 조치 완료 처리</b><span>'+
+      (activeCalls.length
+        ? '호출한 부서가 현장에서 조치를 마쳤다면 눌러 주세요 — 진행 중인 호출 <b>'+activeCalls.length+'건</b>('+activeCalls.map(function(d){ return d.name; }).join(', ')+')이 모두 초기화됩니다.'
+        : '지금은 진행 중인 호출이 없습니다.')+
+    '</span></div>'+
+    '<button type="button" class="dcc-done-btn" id="dccDoneBtn"'+(activeCalls.length?'':' disabled')+'>✅ 조치 완료</button>'+
+  '</div>';
+
+  el.innerHTML = '<div class="dcc-wizard">'+box1+arrow+box2+arrow+box3+'</div>'+footer+doneRow;
 }
 
 /* ---- 담당 부서 호출 팝업 — 화면 상단 "🆘 담당 부서 호출" 버튼을 누르면 열리며,
@@ -3671,7 +3752,7 @@ function openDeptCallModal(){
   resetDeptCallFlow();
   openModal(
     '<h3>🆘 담당 부서 호출</h3>'+
-    '<p class="sec-sub" style="margin-bottom:14px;">필요한 부서에 직접 도움을 요청하세요. 호출 단계를 선택한 뒤, 부서와 불량 발생 원인을 (여러 개) 선택하고 맨 아래 <b>호출하기</b> 버튼으로 확정합니다. 이미 호출한 부서는 <b>2단계 부서 선택</b> 목록에 함께 표시되며, 거기서 바로 호출 해제할 수 있습니다.</p>'+
+    '<p class="sec-sub" style="margin-bottom:14px;">필요한 부서에 직접 도움을 요청하세요. 호출 단계를 선택한 뒤, 부서와 불량 발생 원인을 (여러 개) 선택하고 맨 아래 <b>호출하기</b> 버튼으로 확정합니다. 이미 호출한 부서는 <b>2단계 부서 선택</b> 목록에 함께 표시되며, 거기서 바로 <b>호출 취소</b>할 수 있습니다. 부른 부서가 와서 조치를 마쳤다면 맨 아래 <b>조치 완료</b> 버튼으로 진행 중인 호출을 한 번에 정리하세요.</p>'+
     '<div class="dept-call-grid" id="deptCallGrid"></div>'
   );
   renderDeptCallGrid('deptCallGrid', true);
@@ -3885,10 +3966,6 @@ function renderAiPanel(){
           ? '✅ AI 제안을 수락했습니다 — 아래에서 세부 내용을 확인하고 조치를 진행하세요.'
           : '✋ AI 제안을 거절했습니다 — 아래에서 직접 확인 후 조치를 진행하세요.';
         detailSection.scrollIntoView({behavior:'smooth', block:'nearest'});
-        /* 작업자 안돈램프(파랑=조치 필요)는 "AI 진단에 아직 응답하지 않음"을 이 플래그로
-           판단하므로, 수락/거절 응답 즉시 꺼지도록 여기서 바로 갱신한다. */
-        issue.decided = true;
-        if(document.getElementById('workerAndonLamp')) renderWorkerAndonLamp('workerAndonLamp');
       }
       acceptBtn.onclick = function(){ revealDetail('accept'); };
       rejectBtn.onclick = function(){ revealDetail('reject'); };
@@ -4572,8 +4649,11 @@ function openKpiYieldDetail(){
     '</div>'+
     '<h4 style="margin:16px 0 8px;">📋 최근 NG 발생 (최근 3건)</h4>'+
     recentHtml+
-    '<p class="sec-sub" style="margin-top:14px;line-height:1.7;">각 NG 건의 원인·조치 상세는 <b>금일 NG 수량</b> 카드 또는 상단 상태 스트립의 <b>금일 NG</b> 칩에서 관리번호별로 확인할 수 있습니다.</p>'
+    '<p class="sec-sub" style="margin-top:14px;line-height:1.7;">각 NG 건의 원인·조치 상세는 아래 버튼에서 관리번호별로 확인할 수 있습니다.</p>'+
+    '<button type="button" class="mini-btn" id="goNgDetailBtn">🚫 금일 NG 상세 보기 →</button>'
   );
+  var ngBtn = document.getElementById('goNgDetailBtn');
+  if(ngBtn) ngBtn.onclick = openNgDetailModal;
 }
 function openKpiUptimeDetail(){
   var totalSec = uptimeSeconds+downtimeSeconds;
@@ -4909,17 +4989,15 @@ function helpSectionWorker(){
       '<button class="active" disabled>현장 작업자 화면</button><button disabled>관리자 화면</button>'+
     '</div></div>'+
     '<p>화면 상단 중앙의 <b>현장 작업자 화면 / 관리자 화면</b> 버튼으로 두 화면을 언제든 전환할 수 있습니다.</p></div>'+
-  '<div class="help-block"><h4>2. 상단 상태 스트립</h4>'+
+  '<div class="help-block"><h4>2. 상단 현황 카드</h4>'+
     '<div class="help-illust"><div class="status-strip" style="margin:0;">'+
       '<div class="pill-line normal">✅ 정상 가동</div>'+
-      '<div class="chip clickable">사이클 <b>128</b>회</div>'+
-      '<div class="chip clickable">🎯 목표 생산량 <b>128/1000개</b> <span class="chip-hint">🔍</span></div>'+
-      '<div class="chip clickable"><span class="sw" style="background:var(--crit)"></span>금일 NG <b>3</b>개 <span class="chip-hint">🔍</span></div>'+
-      '<div class="chip clickable">불량률 <b>1.4%</b> <span class="chip-hint">🔍</span></div>'+
-      '<div class="chip clickable">⚙️ 가동률 <b>96.2%</b> <span class="chip-hint">🔍</span></div>'+
-      '<div class="chip clickable">연속 이탈 <b>1/3</b> <span class="chip-hint">🔍</span></div>'+
+      '<div class="chip">🏭 설비 사진 · 가동 상태</div>'+
+      '<div class="chip">⚙️ 설비 신호등</div>'+
+      '<div class="chip">🙋 작업자 안돈램프</div>'+
+      '<div class="chip clickable">📊 생산 현황 <span class="chip-hint">🔍</span></div>'+
     '</div></div>'+
-    '<p>알약 모양 칩들은 라인 상태·사이클 수·목표 생산량·불량률·가동률 등 핵심 지표를 실시간으로 보여줍니다. 🔍 아이콘이 붙은 칩(<b>목표 생산량</b>, <b>금일 NG</b>, <b>불량률</b>, <b>가동률</b>, <b>연속 이탈</b>)은 클릭하면 그 값이 어떤 계산식으로 나왔는지와 관련 내역까지 상세 팝업으로 확인할 수 있습니다.</p></div>'+
+    '<p>화면 맨 위에는 카드 4장이 나란히 놓입니다 — <b>설비 사진</b>(지금 이 화면이 어느 설비 이야기인지와 가동/정지 상태), <b>설비 신호등</b>(설비·공정 상태 3색 + 라인 상태 알약 + 연속 이탈 횟수), <b>작업자 안돈램프</b>(작업자가 호출한 부서 호출 단계 5색), <b>생산 현황</b>(생산수량·가동률·불량률·생산속도·MTTR·MTBF와 오늘의 목표 달성률)입니다. 생산 현황 카드의 지표와 연속 이탈 표시처럼 🔍 아이콘이 붙은 항목은 클릭하면 그 값이 어떤 계산식으로 나왔는지와 관련 내역까지 상세 팝업으로 확인할 수 있습니다.</p></div>'+
   '<div class="help-block"><h4>3. 안돈램프</h4>'+
     '<div class="help-illust" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;">'+
       [['정상',STATUS_COLOR.normal],['주의',STATUS_COLOR.warn],['이상',STATUS_COLOR.danger]].map(function(pair){
@@ -4937,7 +5015,8 @@ function helpSectionWorker(){
           '<b style="font-size:14px;line-height:1;">'+lv.level+'</b><small style="font-size:10px;">'+lv.sub+'</small></span>';
       }).join('')+
     '</div>'+
-    '<p>화면 상단의 <b>🆘 담당 부서 호출</b> 버튼을 누르면 언제든(AI 진단 수락/거절과 무관하게) 팝업창이 열립니다. 팝업 안에는 화살표로 이어진 3개의 박스가 순서대로 나타납니다 — <b>① 호출 단계(1~5단계)</b>를 하나 선택하면, <b>② 담당 부서</b> 박스에 그 단계에서 지원되는 부서가 나타나고(단계가 높을수록 더 많은 부서 — 특히 설비보전팀 — 가 열리며, <b>여러 부서를 함께</b> 선택할 수 있습니다) 부서를 고르면 <b>③ 불량 발생 원인</b> 박스에서 원인을 <b>하나 이상</b> 선택할 수 있습니다. 세 가지를 모두 고르면 팝업 맨 아래에 <b>호출하기</b> 버튼이 나타납니다. 누르면 선택한 모든 부서에 즉시 🔔 알림 이력으로 기록되고 관리자 화면의 <b>담당자 호출 현황</b>에도 단계·원인과 함께 실시간으로 표시됩니다. 이미 호출 중인 부서가 있으면 헤더 버튼에 빨간 점이 표시되고, <b>② 담당 부서</b> 박스 안에 그 부서의 현재 상태 카드가 함께 나타나므로 거기서 바로 <b>호출 해제</b>할 수 있습니다 — 호출/해제는 항상 현장(작업자 화면)에서만 하며, 관리자 화면은 현황만 확인합니다.</p></div>'+
+    '<p>화면 상단의 <b>🆘 담당 부서 호출</b> 버튼을 누르면 언제든(AI 진단 수락/거절과 무관하게) 팝업창이 열립니다. 팝업 안에는 화살표로 이어진 3개의 박스가 순서대로 나타납니다 — <b>① 호출 단계(1~5단계)</b>를 하나 선택하면, <b>② 담당 부서</b> 박스에 그 단계에서 지원되는 부서가 나타나고(단계가 높을수록 더 많은 부서 — 특히 설비보전팀 — 가 열리며, <b>여러 부서를 함께</b> 선택할 수 있습니다) 부서를 고르면 <b>③ 불량 발생 원인</b> 박스에서 원인을 <b>하나 이상</b> 선택할 수 있습니다. 세 가지를 모두 고르면 팝업 맨 아래에 <b>호출하기</b> 버튼이 나타납니다. 누르면 선택한 모든 부서에 즉시 🔔 알림 이력으로 기록되고 관리자 화면의 <b>담당자 호출 현황</b>에도 단계·원인과 함께 실시간으로 표시됩니다. 이미 호출 중인 부서가 있으면 헤더 버튼에 빨간 점이 표시되고, <b>② 담당 부서</b> 박스 안에 그 부서의 현재 상태 카드가 함께 나타나므로 거기서 바로 <b>호출 취소</b>(실수로 불렀거나 더 이상 필요 없을 때)할 수 있습니다. 부른 부서가 현장에 와서 처리를 끝냈다면 팝업 맨 아래의 <b>✅ 조치 완료</b> 버튼을 누르세요 — 진행 중인 호출이 한 번에 모두 초기화되고, 조치가 끝났다는 사실이 🔔 알림 이력에 남아 관리자 화면에서도 확인됩니다. 호출·취소·조치 완료는 항상 현장(작업자 화면)에서만 하며, 관리자 화면은 현황만 확인합니다.</p>'+
+    '<p>여기서 고른 <b>호출 단계</b>는 상단 <b>작업자 안돈램프</b>의 색으로 그대로 나타납니다 — <b>1단계</b> 흰색(대기), <b>2단계</b> 파랑(조치 요청), <b>3단계</b> 노랑(경보), <b>4~5단계</b> 빨강(위험)입니다. 이 램프는 <b>오직 이 호출에만</b> 반응하므로, 설비 이상이나 라인 정지 때문에 저절로 켜지지 않습니다(설비 상태는 옆의 설비 신호등이 보여줍니다). 램프 아래 <b>부서 호출</b> 줄에 현재 호출 단계와 부서가 함께 표시되고, 그 줄을 누르면 호출 팝업이 바로 열립니다.</p></div>'+
   '<div class="help-block"><h4>5. 파라미터 게이지 읽는 법</h4>'+
     '<div class="help-illust gauge-illust">'+gaugeSVG(CONFIG_BY_ID.moldTemp, CONFIG_BY_ID.moldTemp.target, 'normal')+'</div>'+
     '<p>반원이 왼쪽(최소값)에서 오른쪽(최대값)으로 채워지며, 채워진 색이 현재 상태(초록=정상, 노랑=주의, 빨강=이상)를 나타냅니다. 하늘색 점은 기준값(목표), 흰 눈금선은 관리한계, 빨간 눈금선은 스펙한계입니다.</p></div>'+
@@ -5307,6 +5386,7 @@ function handleRemoteCommand(msg){
     case 'resumeLine': resumeLine(); renderAll(); break;
     case 'callDept': callDeptReal(p.deptId, p.level, p.causes); break;
     case 'cancelDept': cancelDeptReal(p.deptId); break;
+    case 'completeDeptCalls': completeDeptCallsReal(); break;
     case 'demo': applyDemoAction(p.type, p.payload); break;
   }
 }
