@@ -1448,6 +1448,30 @@ var DEPT_CALL_LIST = [
 ];
 var DEPT_CALL_BY_ID = {}; DEPT_CALL_LIST.forEach(function(d){ DEPT_CALL_BY_ID[d.id]=d; });
 
+/* ==================== Discord 알림 연동 (담당 부서 호출 전용) ====================
+   담당 부서를 호출/취소/조치완료할 때마다, 그 부서의 Discord 채널로만 알림이
+   전달된다(다른 부서 채널에는 가지 않는다). Discord는 브라우저가 웹훅에 직접
+   요청하는 것을 막아두어서(CORS), 중계 서버(Cloudflare Workers, 무료)를 하나
+   거친다 — 로그인이나 토큰 교환 같은 절차는 전혀 없다. 설정 방법은 함께 받은
+   discord-worker.js 파일 상단 주석 참고. 중계 서버 주소 하나만 아래
+   DISCORD_WORKER_URL에 넣으면 바로 동작한다. */
+var DISCORD_WORKER_URL = 'https://lively-snow-b476.tmxhffkdlxj.workers.dev/notify';
+/* 실제 상태 변경은 항상 리더 화면에서만 일어나므로(callDeptReal/cancelDeptReal/
+   completeDeptCallsReal 자체가 이미 리더 탭에서만 호출됨), 이 함수는 그 시점에
+   한 번만 호출되어 중복 전송되지 않는다. title/body는 호출부에서 그 화면에 남기는
+   알림(pushNotify)과 같은 문구를 그대로 재사용해, 화면에 보이는 내용과 Discord로
+   가는 내용이 항상 똑같도록 한다. */
+function sendDiscordDeptAlert(dept, title, body, tone){
+  try{
+    if(!DISCORD_WORKER_URL || !dept) return;
+    if(typeof isLeader==='function' && !isLeader()) return;
+    fetch(DISCORD_WORKER_URL, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ title:title, body:body, tone:tone||'info', team: dept.id, source:'admin' })
+    }).catch(function(err){ /* 발송 실패는 조용히 무시 */ });
+  }catch(err){ /* 무시 */ }
+}
+
 /* 담당자 호출 시 선택하는 호출 단계(1~5) — 숫자가 낮을수록 경미, 높을수록 긴급하다.
    단계에 따라 아래 LEVEL_DEPT_MAP에서 선택 가능한 부서 범위가 달라진다. */
 var CALL_LEVELS = [
@@ -3534,11 +3558,10 @@ function callDeptReal(deptId, level, causes){
   if(deptCalls[deptId] && deptCalls[deptId].active) return;
   causes = causes||[];
   deptCalls[deptId] = { active:true, calledAt: Date.now(), level: level||null, causes: causes };
-  pushNotify(
-    '📣 담당자 호출 — '+dept.name,
-    '현장에서 '+dept.icon+' '+dept.name+'을(를) '+(level?level+'단계로 ':'')+'호출했습니다.'+(causes.length?' (원인: '+causes.join(' · ')+')':'')+' 확인 후 조치해 주세요.',
-    'warn'
-  );
+  var callTitle = '📣 담당자 호출 — '+dept.name;
+  var callBody = '현장에서 '+dept.icon+' '+dept.name+'을(를) '+(level?level+'단계로 ':'')+'호출했습니다.'+(causes.length?' (원인: '+causes.join(' · ')+')':'')+' 확인 후 조치해 주세요.';
+  pushNotify(callTitle, callBody, 'warn');
+  sendDiscordDeptAlert(dept, callTitle, callBody, 'crit');
   renderAll();
 }
 function callDeptAction(deptId, level, causes){
@@ -3547,7 +3570,14 @@ function callDeptAction(deptId, level, causes){
 }
 function cancelDeptReal(deptId){
   if(!deptCalls[deptId] || !deptCalls[deptId].active) return;
+  var dept = DEPT_CALL_BY_ID[deptId];
   deptCalls[deptId] = { active:false, calledAt:null, level:null, causes:[] };
+  if(dept){
+    var cancelTitle = '🔕 담당자 호출 취소 — '+dept.name;
+    var cancelBody = dept.icon+' '+dept.name+' 호출이 취소되었습니다.';
+    pushNotify(cancelTitle, cancelBody, 'info');
+    sendDiscordDeptAlert(dept, cancelTitle, cancelBody, 'info');
+  }
   renderAll();
 }
 function cancelDeptAction(deptId){
@@ -3566,6 +3596,11 @@ function completeDeptCallsReal(){
     '✅ 담당 부서 호출 조치 완료',
     '조치가 완료되었습니다 — '+done.map(function(d){ return d.icon+' '+d.name; }).join(', ')+' 호출 '+done.length+'건이 모두 초기화되었습니다.'
   );
+  /* 완료 처리된 부서마다, 그 부서 채널로 각각 조치완료 알림을 보낸다(여러 부서를
+     동시에 호출했던 경우 부서별로 한 건씩 간다). */
+  done.forEach(function(d){
+    sendDiscordDeptAlert(d, '✅ 담당자 호출 조치 완료 — '+d.name, d.icon+' '+d.name+' 호출에 대한 조치가 완료되었습니다.', 'info');
+  });
   resetDeptCallFlow();
   renderAll();
 }
