@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>엔진마운트 사출성형 공정 · 현장 작업자 화면</title>
+<title>엔진마운트 사출성형 공정 · 관리자 화면</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <style>
 /* ============ Tokens (deliberate dark HMI console — factory-floor screens run dark by convention) ============ */
@@ -1587,7 +1587,7 @@ table.data-table tr:hover td{background:rgba(255,255,255,.02);}
 
 <div id="app">
 
-  <div id="syncWaitBanner" class="hidden sync-wait-banner">⏳ 관리자 화면과(와) 연동 대기 중입니다 — 두 화면을 함께 열어두면 자동으로 동기화됩니다.</div>
+  <div id="syncWaitBanner" class="hidden sync-wait-banner">⏳ 작업자 화면과(와) 연동 대기 중입니다 — 두 화면을 함께 열어두면 자동으로 동기화됩니다.</div>
 
   <div id="alertBanner" class="hidden">
     <span class="siren">🚨</span>
@@ -1600,113 +1600,178 @@ table.data-table tr:hover td{background:rgba(255,255,255,.02);}
       <div class="mark">🎛️</div>
       <div class="txt">
         <h1>엔진마운트 사출성형 공정</h1>
-        <p>LINE-01 · DESMA D 986-600 · 품질관제 현장 작업자 화면</p>
+        <p>LINE-01 · DESMA D 986-600 · 품질관제 관리자 화면 · 라인 현황 &amp; 설정</p>
       </div>
     </div>
-    <button type="button" class="help-btn dept-call-header-btn" id="deptCallHeaderBtn" title="담당 부서에 도움을 요청합니다">🆘 담당 부서 호출<span id="deptCallHeaderDot" class="dch-dot hidden"></span></button>
+    <div class="lamp-console">
+      <div class="lamp-block">
+        <span class="lamp-name">설비 신호등</span>
+        <div class="andon-lamp-mini equip-lamp-mini" id="andonLamp"></div>
+      </div>
+      <div class="lamp-block">
+        <span class="lamp-name">작업자 안돈램프</span>
+        <div class="worker-lamp-wrap">
+          <div class="andon-lamp-mini worker-lamp-mini" id="workerAndonLamp"></div>
+          <button type="button" class="lamp-info-btn" id="workerLampInfoBtn" title="안돈램프 색상 운영 기준 보기">ⓘ</button>
+        </div>
+      </div>
+    </div>
+    <a class="nav-link-btn" href="worker.html" target="_blank" rel="noopener">🏭 작업자 화면 열기 →</a>
     <button type="button" id="bellBtn" class="bell-btn" title="알림 이력 보기">🔔<span id="bellDot" class="bell-dot hidden"></span></button>
     <button class="help-btn" id="helpBtn" title="사용 설명서 보기">❔ 사용법</button>
     <div class="clock"><small>현재 시각</small><span id="clockText">--:--:--</span></div>
   </header>
 
-  <!-- ===================== FLOOR VIEW ===================== -->
-  <main id="floorView">
+  <!-- ===================== ADMIN VIEW ===================== -->
+  <main id="adminView">
 
-    <div class="hero-row">
-      <div class="hero-card hero-card-machine" id="machineHeroCard">
-        <div class="hero-card-head">
-          <span class="lamp-name">🏭 엔진마운트 사출공정</span>
-          <span class="machine-line-tag">LINE-01</span>
-        </div>
-        <div class="machine-photo" role="img" aria-label="엔진마운트 사출성형 공정 현장 사진 — 사출성형기 DESMA D 986-600">
-          <div class="machine-caption">
-            <b>DESMA D 986-600<small>고무 사출성형기 · 엔진마운트 전용</small></b>
-            <span class="machine-state normal" id="machineState"><i class="ms-dot"></i><span id="machineStateText">가동 중</span></span>
-          </div>
-        </div>
-        <button type="button" class="mold-mini" id="moldMiniBtn" title="클릭하여 금형 수명 상세 보기"></button>
+    <div class="admin-nav" id="adminNav">
+      <button data-t="overview" class="active">개요</button>
+      <button data-t="analytics">생산 분석</button>
+      <button data-t="history">이력 · 추적성</button>
+      <button data-t="settings">임계값 · 설정</button>
+    </div>
+
+    <!-- overview -->
+    <div id="adminOverview">
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card clickable" id="kpiCardProd" tabindex="0" role="button"><span>금일 생산 수량</span><b id="kpiProd">0</b><small>cycles</small><div class="kpi-goal" id="kpiProdGoal"></div><div class="kpi-hint">🔍 상세 보기</div></div>
+        <div class="kpi-card clickable" id="kpiCardYield" tabindex="0" role="button"><span>불량률</span><b id="kpiYield">0.0%</b><small>defect rate</small><div class="kpi-goal" id="kpiYieldGoal"></div><div class="kpi-hint">🔍 상세 보기</div></div>
+        <div class="kpi-card clickable" id="kpiCardDefectProb" tabindex="0" role="button"><span>불량 발생 예상확률</span><b id="kpiDefectProb">-</b><small>AI 실시간 예측</small><div class="kpi-goal" id="kpiDefectProbGoal"></div><div class="kpi-hint">🔍 상세 보기</div></div>
+        <div class="kpi-card clickable" id="kpiCardUptime" tabindex="0" role="button"><span>가동률</span><b id="kpiUptime">100.0%</b><small>availability</small><div class="kpi-goal" id="kpiUptimeGoal"></div><div class="kpi-hint">🔍 상세 보기</div></div>
+        <div class="kpi-card clickable" id="kpiCardCycle" tabindex="0" role="button"><span>평균 사이클타임</span><b id="kpiCycle">0.0s</b><small>target 대비</small><div class="kpi-goal" id="kpiCycleGoal"></div><div class="kpi-hint">🔍 상세 보기</div></div>
+        <div class="kpi-card clickable" id="kpiCardNg" tabindex="0" role="button"><span>금일 NG 수량</span><b id="kpiNg">0</b><small>격리 박스</small><div class="kpi-goal" id="kpiNgGoal"></div><div class="kpi-hint">🔍 상세 보기</div></div>
+        <div class="kpi-card clickable" id="kpiCardAlarm" tabindex="0" role="button"><span>현재 알람</span><b id="kpiAlarm">0</b><small>진행중 이슈</small><div class="kpi-goal" id="kpiAlarmGoal"></div><div class="kpi-hint">🔍 상세 보기</div></div>
+        <div class="kpi-card clickable" id="kpiCardMttr" tabindex="0" role="button"><span>MTTR (평균 수리 시간)</span><b id="kpiMttr">-</b><small>과거 이력 + 금일 · 발생 → 조치완료</small><div class="kpi-hint">🔍 상세 보기</div></div>
+        <div class="kpi-card clickable" id="kpiCardMtbf" tabindex="0" role="button"><span>MTBF (평균 고장 간격)</span><b id="kpiMtbf">-</b><small>과거 이력 + 금일 · 가동시간 ÷ 고장</small><div class="kpi-hint">🔍 상세 보기</div></div>
       </div>
 
-      <div class="hero-card hero-card-lamp" id="equipHeroCard">
-        <div class="hero-card-head">
-          <span class="lamp-name">⚙️ 설비 신호등</span>
-          <span class="hero-badge normal" id="equipHeroBadge">정상</span>
-        </div>
-        <div class="hero-lamp-body">
-          <div class="andon-lamp-mini equip-lamp-mini" id="andonLamp"></div>
-          <div class="pill-line normal" id="lineStatusPill">✅ 정상 가동</div>
-          <button type="button" class="hero-sub-stat" id="heroDefectProbBtn" title="클릭하여 불량 발생 예상확률 산출 근거 보기">불량 예상확률 <b id="heroDefectProb">-</b> <span class="chip-hint">🔍</span></button>
+      <div class="sec-head">
+        <h2>SPC 관리도<span>실시간 · 관리번호별 추세</span></h2>
+        <div class="sec-sub">파라미터를 선택하면 관리도를 크게 보여줍니다. 선택하지 않으면 이상 · 주의 항목으로 자동 전환됩니다.</div>
+      </div>
+      <div class="panel-block admin-spc-block" id="adminSpcPanel"></div>
+
+      <div class="sec-head">
+        <h2>AI 심층 진단<span>이상 발생 시 원인 후보·근거 분석</span></h2>
+        <div class="sec-sub">현장 화면보다 상세한 근거(이탈 수치·추세·연관 파라미터·과거 사례)를 함께 제시합니다.</div>
+      </div>
+      <div id="adminAiPanel"></div>
+
+      <div class="sec-head">
+        <h2>담당자 호출 현황<span>작업자 화면에서 호출한 부서</span></h2>
+        <div class="sec-sub">호출·해제는 현장(작업자 화면)에서 하며, 여기서는 실시간 현황만 확인할 수 있습니다.</div>
+      </div>
+      <div class="dept-call-grid" id="deptCallGridAdmin"></div>
+
+      <div class="sec-head"><h2>라인 현황<span>전 라인 개요</span></h2></div>
+      <div class="line-grid" id="lineGrid"></div>
+
+      <div class="sec-head">
+        <h2>금형 수명<span>누적 타수 기반 예방보전</span></h2>
+        <div class="sec-sub">사출 1사이클 = 1타수로 집계되며, 설계 수명 대비 소모율로 점검·교체 시점을 관리합니다.</div>
+      </div>
+      <div class="panel-block" id="moldLifePanel"></div>
+
+      <div class="sec-head"><h2>파라미터 트렌드<span>LINE-01 · 최근 60초</span></h2></div>
+      <div class="trend-grid" id="trendGrid"></div>
+
+    </div>
+
+    <!-- analytics: 생산 분석 -->
+    <div id="adminAnalytics" class="hidden">
+      <div class="sec-head">
+        <h2>생산 추이<span>시간대별 생산량 · 불량률</span></h2>
+        <div class="sec-sub">막대는 시간당 생산량, 붉은 선은 그 시간대의 불량률입니다.</div>
+      </div>
+      <div class="panel-block" id="prodTrendPanel"></div>
+
+      <div class="sec-head">
+        <h2>비용 절감 효과<span>품질 손실 · 정지 손실 절감액</span></h2>
+        <div class="sec-sub">불량 감소와 수리 시간 단축으로 줄어드는 비용을 산출 근거와 함께 금액으로 표시합니다.</div>
+      </div>
+      <div class="panel-block" id="roiPanel"></div>
+
+      <div class="sec-head">
+        <h2>설비 신뢰성<span>MTTR · MTBF</span></h2>
+        <div class="sec-sub">평균 수리 시간과 평균 고장 간격을 도입 전 수준과 비교합니다.</div>
+      </div>
+      <div class="panel-block" id="reliPanel"></div>
+    </div>
+
+    <!-- history & traceability -->
+    <div id="adminHistory" class="hidden">
+      <div class="panel-block">
+        <h3>📜 이상 발생 · 조치 이력 (4M 이력)</h3>
+        <p class="sec-sub" style="margin-bottom:10px;">👉 행을 클릭하면 원인·조치·판단 사유 등 상세 내용을 볼 수 있습니다 — 보고 싶지 않으면 그대로 목록만 확인하셔도 됩니다.</p>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>시간</th><th>라인</th><th>파라미터</th><th>유형</th><th>원인</th><th>조치</th><th>상태</th><th>담당</th></tr></thead>
+            <tbody id="historyTbody"></tbody>
+          </table>
         </div>
       </div>
-
-      <div class="hero-card hero-card-lamp" id="workerHeroCard">
-        <div class="hero-card-head">
-          <span class="lamp-name">🙋 작업자 안돈램프</span>
-          <button type="button" class="lamp-info-btn" id="workerLampInfoBtn" title="작업자 안돈램프 설명 보기">ⓘ</button>
+      <div class="panel-block">
+        <h3>🗄️ 서버 저장 이력 (Cloudflare D1)</h3>
+        <p class="sec-sub" style="margin-bottom:10px;">이 화면을 새로고침하거나 다른 PC로 접속해도, 서버(Cloudflare D1)에 저장된 이력은 그대로 남아 있습니다 — 버튼을 눌러 최근 기록을 불러오세요.</p>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+          <button type="button" class="mini-btn" id="loadServerHistoryBtn">서버 저장 이력 불러오기</button>
+          <span class="sec-sub" id="serverHistoryMeta"></span>
         </div>
-        <div class="hero-lamp-body">
-          <div class="andon-lamp-mini worker-lamp-mini" id="workerAndonLamp"></div>
-          <div class="hero-pill normal" id="workerHeroPill">정상</div>
-          <button type="button" class="hero-sub-stat" id="workerCallSubBtn" title="클릭하여 담당 부서 호출 창 열기">부서 호출 <b id="workerCallState">없음</b> <span class="chip-hint">🔍</span></button>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>시간</th><th>라인</th><th>파라미터</th><th>유형</th><th>원인</th><th>조치</th><th>상태</th><th>담당</th></tr></thead>
+            <tbody id="serverHistoryTbody"><tr><td colspan="8" class="empty-note">위 버튼을 눌러 서버에 저장된 이력을 불러오세요.</td></tr></tbody>
+          </table>
         </div>
       </div>
-
-      <div class="hero-card hero-card-prod">
-        <div class="hero-card-head">
-          <span class="lamp-name">📊 생산 현황</span>
+      <div class="panel-block">
+        <h3>📈 파라미터 수치 추이 (서버 기록)</h3>
+        <p class="sec-sub" style="margin-bottom:10px;">약 1분 간격으로 서버에 저장되는 실측값 추이를 파라미터별로 조회합니다.</p>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+          <select id="readingParamSelect" style="background:var(--panel-2); border:1px solid var(--border-strong); color:var(--text); border-radius:7px; padding:7px 10px; font-family:var(--font-num); font-size:12.5px;"></select>
+          <button type="button" class="mini-btn" id="loadReadingsBtn">조회</button>
+          <span class="sec-sub" id="readingsMeta"></span>
         </div>
-        <div class="prod-stat-grid">
-          <button type="button" class="prod-stat clickable" id="heroProdStat" title="클릭하여 금일 생산 수량 상세 보기"><span class="ps-label">생산수량 <span class="chip-hint">🔍</span></span><span class="ps-value" id="heroProd">0개</span></button>
-          <button type="button" class="prod-stat clickable" id="heroUptimeStat" title="클릭하여 가동률 상세 내역 보기"><span class="ps-label">가동률 <span class="chip-hint">🔍</span></span><span class="ps-value" id="heroUptime">100.0%</span></button>
-          <button type="button" class="prod-stat clickable" id="heroYieldStat" title="클릭하여 불량률·금일 NG 상세 내역 보기"><span class="ps-label">불량률 <span class="chip-hint">🔍</span></span><span class="ps-value" id="heroYield">0.0%</span><span class="ps-sub">금일 NG <b id="heroNg">0</b>개</span></button>
-          <div class="prod-stat"><span class="ps-label">생산속도</span><span class="ps-value" id="heroSpeed">-</span></div>
-          <button type="button" class="prod-stat clickable" id="heroMttrStat" title="클릭하여 MTTR(평균 수리 시간) 상세 보기"><span class="ps-label">MTTR <span class="chip-hint">🔍</span></span><span class="ps-value sm" id="heroMttr">집계 없음</span></button>
-          <button type="button" class="prod-stat clickable" id="heroMtbfStat" title="클릭하여 MTBF(평균 고장 간격) 상세 보기"><span class="ps-label">MTBF <span class="chip-hint">🔍</span></span><span class="ps-value sm" id="heroMtbf">집계 없음</span></button>
+        <div id="readingsChartHost"><p class="empty-note">파라미터를 선택하고 조회 버튼을 눌러주세요.</p></div>
+      </div>
+      <div class="panel-block">
+        <h3>🏷️ 추적성(Traceability) · 보류 제품</h3>
+        <p class="sec-sub" style="margin-bottom:12px;">이상 징후 구간 전후 생산분은 최종 품질 검사 통과 전까지 출하가 보류됩니다.</p>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>시리얼 구간</th><th>파라미터</th><th>보류 사유</th><th>상태</th><th></th></tr></thead>
+            <tbody id="holdTbody"></tbody>
+          </table>
         </div>
-        <button type="button" class="prod-goal-row clickable" id="heroGoalRow" title="클릭하여 목표 생산량 상세 보기">
-          <div class="prod-goal-donut" id="prodGoalDonut"></div>
-          <div class="prod-goal-text">
-            <b>오늘의 목표 <span class="chip-hint">🔍</span></b>
-            <span class="pgt-num"><span id="heroGoalCurrent">0</span> / <span id="heroGoalTarget">1000</span>개</span>
-          </div>
-        </button>
       </div>
     </div>
 
-    <div class="sec-head">
-      <h2>실시간 공정 파라미터<span>온도·압력·계량·시간 12개 항목</span></h2>
-      <div class="sec-sub">기준값(중심선) · 관리한계 · 스펙한계를 게이지에 함께 표시</div>
-    </div>
-
-    <div class="tab-row">
-      <div class="tabs" id="groupTabs">
-        <button data-g="0">온도 · 가황</button>
-        <button data-g="1">사출 · 계량</button>
-        <button data-g="2">공정 시간</button>
-        <button data-g="all">전체 보기</button>
+    <!-- settings -->
+    <div id="adminSettings" class="hidden">
+      <div class="panel-block">
+        <h3>⚙️ 인터록 &amp; 자동화 설정</h3>
+        <div class="toggle-row">
+          <div><div class="tr-label">연속 이탈 시 설비 자동 정지</div><div class="tr-sub">스펙한계를 연속으로 벗어나면 사출 동작을 즉시 정지(Line Stop)</div></div>
+          <label class="switch"><input type="checkbox" id="toggleAutoStop" checked><span class="track"></span><span class="knob"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div><div class="tr-label">허용 연속 이탈 횟수</div><div class="tr-sub">이 값 이상 연속 이탈 시 자동 정지 트리거</div></div>
+          <div class="field" style="width:90px;"><input type="number" id="inputThreshold" min="1" max="10" value="3"></div>
+        </div>
       </div>
-      <div class="auto-note" id="autoNote">4초마다 자동 전환 중</div>
-      <button class="jump-issue-btn hidden" id="jumpIssueBtn">⚠ 이상 파라미터 바로 보기 <span class="arrow-nudge">→</span></button>
-    </div>
-    <div class="progress-track"><div class="progress-fill" id="rotateProgress"></div></div>
 
-    <div class="gauge-grid" id="gaugeGrid"></div>
-
-    <!-- AI 진단 패널은 더 이상 화면에 펼쳐 두지 않는다 — 파라미터 카드를 누르면 이
-         패널을 그대로 팝업(모달) 안으로 옮겨 넣어, 진단 확인부터 수락·거절 이후의
-         관리도·설정값 조정·체크리스트·사원증 인증까지 한 창에서 끝낸다.
-         아래는 팝업이 닫혀 있을 때 그 패널이 대기하는 숨은 자리다. -->
-    <div class="ai-panel-host" id="aiPanelHost" aria-hidden="true">
-      <div class="ai-panel tone-good" id="aiPanel"></div>
-    </div>
-
-    <div class="lot-hold-notice clickable" id="lotHoldNotice" tabindex="0" role="button" title="클릭하여 품질 확인 대상 로트 보기">
-      <span class="lhn-icon">🏷️</span>
-      <div class="lhn-text">
-        <b>이상 발생 구간 생산분 — 품질 확인 필요</b>
-        <span>이상이 발생한 구간 전후에 생산된 제품(로트)은 최종 품질 검사를 통과하기 전까지 출하할 수 없습니다.</span>
+      <div class="panel-block">
+        <h3>📐 파라미터별 기준값 · 한계 설정</h3>
+        <div id="thresholdList"></div>
       </div>
-      <div class="lhn-count" id="lotHoldCount">검사대기 0건</div>
+
+      <div class="panel-block">
+        <h3>🧱 금형 수명 관리 파라미터</h3>
+        <p class="sec-sub" style="margin-bottom:12px;">사출 1사이클마다 누적 타수가 1씩 올라갑니다. 설계 수명과 점검·교체 기준을 바꾸면 작업자 화면의 금형 수명 표시와 예방보전 판정이 즉시 함께 바뀝니다.</p>
+        <div id="moldSettingsBox"></div>
+      </div>
+
     </div>
   </main>
 
@@ -1721,11 +1786,6 @@ table.data-table tr:hover td{background:rgba(255,255,255,.02);}
     <div id="modalBody"></div>
   </div>
 </div>
-<!-- 카카오 JavaScript SDK — "카카오톡으로 나에게 알림 받기" 기능에 사용.
-     http:// 또는 https:// 로 직접 열었을 때만 동작하며(카카오 로그인 도메인 등록 필요),
-     Claude 아티팩트 미리보기 안이나 file://로 연 화면에서는 이 스크립트가 차단/무시되어
-     기능이 자동으로 비활성 상태가 됩니다. -->
-<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.3/kakao.min.js"></script>
 <script>
 /* ===== Static config & replay dataset (shared, read-only at runtime except CONFIG threshold fields) ===== */
 "use strict";
@@ -6713,6 +6773,112 @@ function drawSparkline(canvas, cfg, s){
   ctx.fillStyle=color; ctx.beginPath(); ctx.arc(lastX,lastY,3,0,Math.PI*2); ctx.fill();
 }
 
+/* ===== 서버 저장 이력 / 수치 추이 조회 (관리자 화면 전용) ===== */
+function loadServerHistory(){
+  var meta = document.getElementById('serverHistoryMeta');
+  var tb = document.getElementById('serverHistoryTbody');
+  if(!meta || !tb) return;
+  meta.textContent = '불러오는 중\u2026';
+  fetch(DATA_WORKER_BASE + '/history?limit=300')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(!data || !data.ok){
+        meta.textContent = '불러오기 실패' + (data && data.error ? (': ' + data.error) : '');
+        return;
+      }
+      var rows = data.rows || [];
+      meta.textContent = rows.length + '건 \u2014 서버에 저장된 전체 이력';
+      if(!rows.length){
+        tb.innerHTML = '<tr><td colspan="8" class="empty-note">서버에 저장된 이력이 아직 없습니다.</td></tr>';
+        return;
+      }
+      tb.innerHTML = rows.map(function(h){
+        var st = h.status || '';
+        return '<tr><td class="mono-num">' + (h.client_time || '') + '</td><td>' + (h.line || '') + '</td><td>' +
+          (h.param || '') + '</td><td>' + (h.type || '') + '</td><td>' + (h.cause || '') + '</td><td>' +
+          (h.action || '') + '</td><td><span class="status-badge ' + st + '">' + st + '</span></td><td>' +
+          (h.actor || '') + '</td></tr>';
+      }).join('');
+    })
+    .catch(function(){ meta.textContent = '불러오기 실패 (네트워크 오류 \u2014 Worker 주소·D1 연결을 확인해 주세요)'; });
+}
+
+function populateReadingParamSelect(){
+  var sel = document.getElementById('readingParamSelect');
+  if(!sel || sel.options.length) return;
+  sel.innerHTML = CONFIG.map(function(cfg){
+    return '<option value="' + cfg.id + '">' + cfg.icon + ' ' + cfg.name + '</option>';
+  }).join('');
+}
+
+function loadServerReadings(){
+  var sel = document.getElementById('readingParamSelect');
+  var meta = document.getElementById('readingsMeta');
+  var host = document.getElementById('readingsChartHost');
+  if(!sel || !sel.value || !host) return;
+  var paramId = sel.value;
+  var cfg = CONFIG_BY_ID[paramId];
+  if(meta) meta.textContent = '불러오는 중\u2026';
+  fetch(DATA_WORKER_BASE + '/readings?param_id=' + encodeURIComponent(paramId) + '&limit=200')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(!data || !data.ok){
+        if(meta) meta.textContent = '불러오기 실패' + (data && data.error ? (': ' + data.error) : '');
+        host.innerHTML = '<p class="empty-note">불러오지 못했습니다.</p>';
+        return;
+      }
+      var rows = data.rows || [];
+      if(meta) meta.textContent = rows.length + '건 \u2014 약 1분 간격 서버 기록';
+      host.innerHTML = renderReadingsChartSvg(cfg, rows);
+    })
+    .catch(function(){
+      if(meta) meta.textContent = '불러오기 실패 (네트워크 오류)';
+      host.innerHTML = '<p class="empty-note">불러오지 못했습니다.</p>';
+    });
+}
+
+function renderReadingsChartSvg(cfg, rows){
+  if(!rows || !rows.length){
+    return '<p class="empty-note">아직 서버에 저장된 수치 기록이 없습니다 \u2014 약 1분 뒤 다시 시도해 주세요 (서버 기록은 리더 화면이 켜져 있는 동안 1분마다 쌓입니다).</p>';
+  }
+  var last = rows[rows.length - 1];
+  var vals = rows.map(function(r){ return r.value; }).filter(function(v){ return v != null; });
+  var specMin = last.spec_min, specMax = last.spec_max;
+  var ctrlMin = last.ctrl_min, ctrlMax = last.ctrl_max, baseline = last.baseline;
+  var lo = Math.min(specMin, vals.length ? Math.min.apply(null, vals) : specMin);
+  var hi = Math.max(specMax, vals.length ? Math.max.apply(null, vals) : specMax);
+  var pad = (hi - lo) * 0.1 || 1;
+  lo -= pad; hi += pad;
+  var CW = 640, CH = 150, PADX = 16;
+  function yx(v){ return CH - ((v - lo) / (hi - lo)) * CH; }
+  var n = rows.length;
+  var innerW = CW - 2 * PADX;
+  var pts = rows.map(function(r, i){
+    var x = PADX + (n > 1 ? i * (innerW / (n - 1)) : innerW / 2);
+    return x.toFixed(1) + ',' + yx(r.value).toFixed(1);
+  }).join(' ');
+  var lastX = PADX + (n > 1 ? (n - 1) * (innerW / (n - 1)) : innerW / 2);
+  var lastY = yx(last.value);
+  var specTop = yx(specMax), specH = yx(specMin) - yx(specMax);
+  var ctrlTop = yx(ctrlMax), ctrlH = yx(ctrlMin) - yx(ctrlMax);
+  var baseY = yx(baseline);
+  var dotColor = (last.severity === '이상') ? 'var(--crit)' : (last.severity === '주의' ? 'var(--warn)' : 'var(--good)');
+  return (
+    '<svg width="100%" height="' + CH + '" viewBox="0 0 ' + CW + ' ' + CH + '" preserveAspectRatio="none" style="display:block; background:rgba(255,255,255,0.03); border-radius:10px;">' +
+      '<rect x="0" y="' + specTop.toFixed(1) + '" width="' + CW + '" height="' + specH.toFixed(1) + '" fill="var(--warn-dim)"/>' +
+      '<rect x="0" y="' + ctrlTop.toFixed(1) + '" width="' + CW + '" height="' + ctrlH.toFixed(1) + '" fill="var(--good-dim)"/>' +
+      '<line x1="0" y1="' + baseY.toFixed(1) + '" x2="' + CW + '" y2="' + baseY.toFixed(1) + '" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,4"/>' +
+      '<polyline points="' + pts + '" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<circle cx="' + lastX.toFixed(1) + '" cy="' + lastY.toFixed(1) + '" r="5" fill="' + dotColor + '"/>' +
+    '</svg>' +
+    '<div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; font-size:11.5px; color:var(--text-faint); margin-top:8px;">' +
+      '<span>기준 ' + baseline + cfg.unit + ' \u00b7 관리한계 ' + ctrlMin + '~' + ctrlMax + ' \u00b7 스펙한계 ' + specMin + '~' + specMax + '</span>' +
+      '<span>최근값 ' + last.value + cfg.unit + '</span>' +
+    '</div>'
+  );
+}
+
+
 function renderAdminHistory(){
   var tb = document.getElementById('historyTbody');
   if(!historyLog.length){ tb.innerHTML='<tr><td colspan="8" class="empty-note">기록된 이력이 없습니다.</td></tr>'; }
@@ -7677,35 +7843,39 @@ function renderBell(){
 <script>
 (function(){
 
-  document.getElementById('groupTabs').addEventListener('click', function(e){
+  document.getElementById('adminNav').addEventListener('click', function(e){
     var btn = e.target.closest('button'); if(!btn) return;
-    var g = btn.dataset.g;
-    userPinned = g==='all' ? 'all' : Number(g);
-    renderedGaugeIds = null;
+    switchAdminTab(btn.dataset.t);
     renderAll();
   });
 
-  /* 상단 "생산 현황" 카드의 지표 타일 — 각 타일을 누르면 그 값이 어떤 계산식으로
-     나왔는지와 관련 내역을 상세 팝업으로 확인할 수 있다(예전 상태 스트립 칩과 동일). */
-  document.getElementById('heroProdStat').onclick = openKpiProdDetail;
-  document.getElementById('heroUptimeStat').onclick = openKpiUptimeDetail;
-  document.getElementById('heroYieldStat').onclick = openKpiYieldDetail;
-  document.getElementById('heroMttrStat').onclick = openKpiMttrDetail;
-  document.getElementById('heroMtbfStat').onclick = openKpiMbtfDetail;
-  document.getElementById('heroGoalRow').onclick = openKpiProdDetail;
-  document.getElementById('heroDefectProbBtn').onclick = openDefectProbModal;
-  document.getElementById('workerCallSubBtn').onclick = openDeptCallModal;
-  document.getElementById('moldMiniBtn').onclick = openMoldLifeModal;
+  document.getElementById('toggleAutoStop').onchange = function(e){ setSetting('autoStopEnabled', e.target.checked); };
+  document.getElementById('inputThreshold').onchange = function(e){
+    var v = parseInt(e.target.value,10);
+    if(v>=1 && v<=10){ setSetting('autoStopThreshold', v); }
+    e.target.value = settings.autoStopThreshold;
+  };
 
-  document.getElementById('modalBody').addEventListener('click', handleDeptCallClick);
-  document.getElementById('deptCallHeaderBtn').onclick = openDeptCallModal;
-  document.getElementById('workerLampInfoBtn').onclick = openWorkerLampInfoModal;
-
-  document.getElementById('lotHoldNotice').onclick = openLotHoldModal;
-  document.getElementById('lotHoldNotice').onkeydown = function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openLotHoldModal(); } };
+  var kpiHandlers = {
+    kpiCardProd: openKpiProdDetail,
+    kpiCardYield: openKpiYieldDetail,
+    kpiCardDefectProb: openDefectProbModal,
+    kpiCardUptime: openKpiUptimeDetail,
+    kpiCardCycle: function(){ switchAdminTab('overview'); openTrendDetail('cycleTime'); },
+    kpiCardNg: openNgDetailModal,
+    kpiCardAlarm: openKpiAlarmDetail,
+    kpiCardMttr: openKpiMttrDetail,
+    kpiCardMtbf: openKpiMbtfDetail
+  };
+  Object.keys(kpiHandlers).forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.onclick = kpiHandlers[id];
+    el.onkeydown = function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); kpiHandlers[id](); } };
+  });
 
   document.getElementById('bellBtn').onclick = openNotifyLogModal;
-  document.getElementById('helpBtn').onclick = function(){ openHelpModal('worker'); };
+  document.getElementById('helpBtn').onclick = function(){ openHelpModal('admin'); };
 
   document.getElementById('modalCloseBtn').onclick = closeModal;
   document.getElementById('modalOverlay').addEventListener('click', function(e){
@@ -7715,15 +7885,26 @@ function renderBell(){
     if(e.key==='Escape') closeModal();
   });
 
+  document.getElementById('workerLampInfoBtn').onclick = openWorkerLampInfoModal;
+
+  populateReadingParamSelect();
+  var loadServerHistoryBtn = document.getElementById('loadServerHistoryBtn');
+  if(loadServerHistoryBtn) loadServerHistoryBtn.onclick = loadServerHistory;
+  var loadReadingsBtn = document.getElementById('loadReadingsBtn');
+  if(loadReadingsBtn) loadReadingsBtn.onclick = function(){ loadServerReadings(); };
+
   seedHistory();
+  buildThresholdList();
+  renderMoldSettings();
   initDemoSidebar();
+  switchAdminTab('overview');
   renderAll();
-  initSync('worker');
+  initSync('admin');
 
   try{
-    if(!localStorage.getItem('axpbl_help_seen_worker')){
-      setTimeout(function(){ openHelpModal('worker'); }, 700);
-      localStorage.setItem('axpbl_help_seen_worker','1');
+    if(!localStorage.getItem('axpbl_help_seen_admin')){
+      setTimeout(function(){ openHelpModal('admin'); }, 700);
+      localStorage.setItem('axpbl_help_seen_admin','1');
     }
   }catch(err){ /* 저장소를 사용할 수 없는 환경 — 무시 */ }
 
